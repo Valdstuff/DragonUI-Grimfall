@@ -18,3 +18,8 @@ Clone or download into your WoW `Interface\AddOns` directory so the `DragonUI` a
 ## Credits
 
 DragonUI is created by **NeticSoul**. MIT for project-authored code; bundled dependencies retain their own licenses. This repository hosts the build used on Grimfall.
+
+
+---
+
+_Updated for the classless Grimfall WoW server by **Valdstein**, with the assistance of AI._
