@@ -1,6 +1,6 @@
 ## Interface: 30300
 ## Title: |cff1784d1DragonUI|r
-## Notes: |cffcaf7faDragonflight-style UI for 3.3.5a with mixed third-party licensing|r
+## Notes: |cffcaf7faDragonflight-style UI for 3.3.5a with mixed third-party licensing|r|n|cff1784d1Grimfall fork|r - configured for the classless WoW server Grimfall (all characters are flagged DRUID).
 ## Version: 2.5
 ## Author: NeticSoul
 ## SavedVariables: DragonUIDB

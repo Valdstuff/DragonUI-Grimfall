@@ -1,6 +1,6 @@
 ## Interface: 30300
 ## Title: |cff1784d1DragonUI|r |cffffffffOptions|r
-## Notes: Configuration UI for DragonUI
+## Notes: Configuration UI for DragonUI|n|cff1784d1Grimfall fork|r - for the classless WoW server Grimfall.
 ## Author: DragonUI Team
 ## Version: 2.5
 ## LoadOnDemand: 1
