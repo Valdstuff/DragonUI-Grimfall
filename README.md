@@ -1,5 +1,9 @@
 # DragonUI-Grimfall
 
+<p align="center">
+  <img width="600" alt="DragonUI-Grimfall" src="https://github.com/user-attachments/assets/4ce41df6-f947-4059-b318-160afe8e8ff1" />
+</p>
+
 DragonUI — a Dragonflight-style interface for World of Warcraft WotLK 3.3.5a — set up for the classless private server **Grimfall WoW**.
 
 ## Included addons
