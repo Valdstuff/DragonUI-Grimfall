@@ -450,6 +450,8 @@ L["Only the main action bar buttons will have a background."] = true
 L["Hide Main Bar Background"] = true
 L["Hide the background texture of the main action bar (makes it completely transparent)"] = true
 L["Hide the background texture of the main action bar."] = true
+L["Main Bar Button Background"] = true
+L["Hide the slot graphic shown inside every action button."] = true
 
 -- Text visibility
 L["Text Visibility"] = true

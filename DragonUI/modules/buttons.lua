@@ -808,7 +808,10 @@ function addon.RefreshButtons()
                 local isMainActionButton = buttonName:match("^ActionButton%d+$")
 
                 -- show/hide action backgrounds
-                if db.only_actionbackground and not isMainActionButton then
+                if db.hide_button_background then
+                    -- Hide the per-button slot graphic on ALL buttons
+                    button.background:Hide()
+                elseif db.only_actionbackground and not isMainActionButton then
                     button.background:Hide()
                 else
                     button.background:Show()

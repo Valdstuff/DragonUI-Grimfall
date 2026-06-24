@@ -138,6 +138,13 @@ local function BuildGeneralTab(scroll)
         callback = RefreshBars,
     })
 
+    C:AddToggle(buttons, {
+        label = LO["Main Bar Button Background"],
+        desc = LO["Hide the slot graphic shown inside every action button."],
+        dbPath = "buttons.hide_button_background",
+        callback = RefreshButtons,
+    })
+
     -- Text visibility sub-section
     local textVis = C:AddSection(scroll, LO["Text Visibility"])
 
