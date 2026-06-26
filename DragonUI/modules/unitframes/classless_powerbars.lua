@@ -43,6 +43,8 @@ local DEFAULTS = {
     emptyBgAlpha       = 0.5,    -- backing opacity (0 = clear, 1 = solid)
     energyHeight       = 0,      -- 0 = keep the client's native height
     rageHeight         = 0,      -- 0 = keep the client's native height
+    matchManaHeight    = true,   -- size energy/rage bars to the mana bar's height
+    roundedCorners     = true,   -- use DragonUI's rounded DF power-bar textures
     energyColorEnabled = false,
     energyColor        = { r = 1.00, g = 0.85, b = 0.00 },
     rageColorEnabled   = false,
@@ -92,6 +94,10 @@ local function ReanchorBars()
     local energyBar = _G.PlayerFrameClasslessEnergyBar
     local rageBar = _G.PlayerFrameClasslessRageBar
 
+    -- Mana bar height, used when matchManaHeight is enabled. An explicit
+    -- energyHeight / rageHeight (> 0) still wins over the auto-match.
+    local manaH = manaBar:GetHeight()
+
     -- Energy bar: top corners pinned to the mana bar's bottom corners, slid by
     -- (offsetX, -offsetY) and with the right edge trimmed in by `inset` pixels.
     if energyBar then
@@ -99,7 +105,11 @@ local function ReanchorBars()
         energyBar:SetPoint("TOPLEFT", manaBar, "BOTTOMLEFT", ox, -gap - oy)
         energyBar:SetPoint("TOPRIGHT", manaBar, "BOTTOMRIGHT", ox - inset, -gap - oy)
         local eh = cfg("energyHeight")
-        if eh and eh > 0 then energyBar:SetHeight(eh) end
+        if eh and eh > 0 then
+            energyBar:SetHeight(eh)
+        elseif cfg("matchManaHeight") and manaH and manaH > 0 then
+            energyBar:SetHeight(manaH)
+        end
     end
 
     -- Rage bar: top corners pinned to the bar above it (energy if present). When
@@ -114,7 +124,11 @@ local function ReanchorBars()
         rageBar:SetPoint("TOPLEFT", aboveRage, "BOTTOMLEFT", rageLeft, -rageDown)
         rageBar:SetPoint("TOPRIGHT", aboveRage, "BOTTOMRIGHT", rageRight, -rageDown)
         local rh = cfg("rageHeight")
-        if rh and rh > 0 then rageBar:SetHeight(rh) end
+        if rh and rh > 0 then
+            rageBar:SetHeight(rh)
+        elseif cfg("matchManaHeight") and manaH and manaH > 0 then
+            rageBar:SetHeight(manaH)
+        end
     end
 
     -- Death knight rune row: the buttons are chained to each other, so moving
@@ -150,6 +164,38 @@ local function ApplyColors()
         if r and r.SetStatusBarColor then
             local c = cfg("rageColor") or DEFAULTS.rageColor
             r:SetStatusBarColor(c.r or c[1] or 1, c.g or c[2] or 0, c.b or c[3] or 0)
+        end
+    end
+end
+
+-- ----------------------------------------------------------------------------
+-- Rounded corners: swap the native energy / rage bar fills for DragonUI's
+-- DragonFlight power-bar textures (the same rounded-rectangle fills used by the
+-- mana bar above), so the secondary bars match the mana bar's look. True corner
+-- masking isn't available on 3.3.5a StatusBars, so matching the bar texture is
+-- the closest equivalent. The DragonUI textures bake their colour in, so the
+-- bar is tinted white to let it show (unless a custom colour override is on).
+-- ----------------------------------------------------------------------------
+local function ApplyTextures()
+    if not cfg("enabled") or not cfg("roundedCorners") then return end
+
+    local tex = addon.UF and addon.UF.TEXTURES and addon.UF.TEXTURES.player
+        and addon.UF.TEXTURES.player.POWER_BARS
+    if not tex then return end
+
+    local e = _G.PlayerFrameClasslessEnergyBar
+    if e and e.SetStatusBarTexture and tex.ENERGY then
+        e:SetStatusBarTexture(tex.ENERGY)
+        if not cfg("energyColorEnabled") and e.SetStatusBarColor then
+            e:SetStatusBarColor(1, 1, 1)
+        end
+    end
+
+    local r = _G.PlayerFrameClasslessRageBar
+    if r and r.SetStatusBarTexture and tex.RAGE then
+        r:SetStatusBarTexture(tex.RAGE)
+        if not cfg("rageColorEnabled") and r.SetStatusBarColor then
+            r:SetStatusBarColor(1, 1, 1)
         end
     end
 end
@@ -308,6 +354,7 @@ local function TrySetup()
 
     InstallHooks()
     ReanchorBars()
+    ApplyTextures()
     ApplyColors()
     ApplyBackgrounds()
     ApplySkin()
@@ -327,6 +374,7 @@ driver:SetScript("OnEvent", function(self, event, unit)
     if event == "UNIT_DISPLAYPOWER" and unit ~= "player" then return end
     TrySetup()
     ReanchorBars()
+    ApplyTextures()
     ApplyColors()
     ApplyBackgrounds()
     ApplySkin()
@@ -352,6 +400,7 @@ end)
 function M:Refresh()
     if not M.setupDone then TrySetup() end
     ReanchorBars()
+    ApplyTextures()
     ApplyColors()
     ApplyBackgrounds()
     ApplySkin()

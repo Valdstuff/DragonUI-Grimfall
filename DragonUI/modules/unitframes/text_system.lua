@@ -297,8 +297,15 @@ function TextSystem.UpdateFrameText(frameType, unit, parentFrame, healthBar, man
 
     -- Update mana text
     if manaBar and shouldShowMana then
-        local power = UnitPower(actualUnit) or 0
-        local maxPower = UnitPowerMax(actualUnit) or 1
+        local power, maxPower
+        if frameType == "player" and actualUnit == "player" then
+            -- Grimfall: the player bar always reflects MANA, even in druid forms
+            power = UnitPower(actualUnit, 0) or 0
+            maxPower = UnitPowerMax(actualUnit, 0) or 1
+        else
+            power = UnitPower(actualUnit) or 0
+            maxPower = UnitPowerMax(actualUnit) or 1
+        end
         local powerText = TextSystem.FormatStatusText(power, maxPower, config.textFormat, config.breakUpLargeNumbers,
             frameType)
         TextSystem.UpdateDualText(parentFrame, prefix .. "Mana", powerText, config.textFormat, true)

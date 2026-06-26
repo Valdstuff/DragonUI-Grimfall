@@ -1128,7 +1128,8 @@ local function UpdateManaBarColor(statusBar)
         local textureSetting = config and config.manabar_texture or "dragonui"
         if textureSetting ~= "dragonui" then
             -- Override texture: use DB color if available, else fall back to DF defaults
-            local _, powerToken = UnitPowerType('player')
+            -- Grimfall: always color as MANA, ignoring druid form power swaps.
+            local powerToken = "MANA"
             local dbColors = config and config.power_colors
             local color = (dbColors and dbColors[powerToken]) or DF_POWER_COLORS[powerToken] or DF_POWER_COLORS["MANA"]
             statusBar:SetStatusBarColor(color.r or 1, color.g or 1, color.b or 1)
@@ -1145,13 +1146,24 @@ local function UpdatePowerBarTexture(statusBar)
         return
     end
 
-    local powerType, powerTypeString = UnitPowerType('player')
-    local powerTexture = GetPowerBarTexture(powerTypeString)
+    -- Grimfall: the player bar always shows MANA, ignoring druid form power
+    -- swaps (bear = RAGE, cat = ENERGY). Force the MANA texture and override
+    -- the bar value/max to the player's mana pool. Skip while in a vehicle,
+    -- where the bar legitimately shows the vehicle's power.
+    local powerTexture = GetPowerBarTexture("MANA")
 
     --  CHANGE TEXTURE based on current power type
     local currentTexture = statusBar:GetStatusBarTexture():GetTexture()
     if currentTexture ~= powerTexture then
         statusBar:GetStatusBarTexture():SetTexture(powerTexture)
+    end
+
+    if not UnitHasVehicleUI("player") then
+        local manaMax = UnitPowerMax("player", 0)
+        if manaMax and manaMax > 0 then
+            statusBar:SetMinMaxValues(0, manaMax)
+            statusBar:SetValue(UnitPower("player", 0))
+        end
     end
 
     -- Update color after texture change (druid form shifts change power type)
@@ -2942,6 +2954,15 @@ end)
 -- Hook to update alternate mana bar text when power changes
 hooksecurefunc("UnitFrameManaBar_Update", function(statusbar, unit)
     if unit == "player" then
+        -- Grimfall: keep the player bar tracking MANA after Blizzard updates it
+        -- to the active (form) power type. Skip while in a vehicle.
+        if statusbar == PlayerFrameManaBar and not UnitHasVehicleUI("player") then
+            local manaMax = UnitPowerMax("player", 0)
+            if manaMax and manaMax > 0 then
+                statusbar:SetMinMaxValues(0, manaMax)
+                statusbar:SetValue(UnitPower("player", 0))
+            end
+        end
         local _, playerClass = UnitClass("player")
         if playerClass == "DRUID" then
             local config = GetPlayerConfig()
