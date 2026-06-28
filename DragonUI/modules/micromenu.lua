@@ -127,6 +127,172 @@ end
 
 local bagslots = {_G.CharacterBag0Slot, _G.CharacterBag1Slot, _G.CharacterBag2Slot, _G.CharacterBag3Slot};
 
+local DUI_CLASSLESS_BTN_NAME = "DragonUIClasslessMicroButton"
+
+local function GetClasslessDiceIcon()
+    return select(10, GetItemInfo("Destiny's Dice"))
+        or select(10, GetItemInfo("Destiny’s Dice"))
+        or [[Interface\Icons\INV_Misc_Dice_01]]
+end
+
+local function EnsureClasslessMicroButton(parent)
+    local b = _G[DUI_CLASSLESS_BTN_NAME]
+    if not b then
+        b = CreateFrame("Button", DUI_CLASSLESS_BTN_NAME, parent or UIParent)
+
+        local SLOT_TEX = [[Interface\AddOns\DragonUI\Textures\Micromenu\uimicromenu2x]]
+        local slot = b:CreateTexture(nil, "BACKGROUND")
+        slot:SetTexture(SLOT_TEX)
+        slot:SetTexCoord(0.0654297, 0.12793, 0.330078, 0.490234)
+        b.duiSlot = slot
+        local slotPushed = b:CreateTexture(nil, "BACKGROUND")
+        slotPushed:SetTexture(SLOT_TEX)
+        slotPushed:SetTexCoord(0.0654297, 0.12793, 0.494141, 0.654297)
+        slotPushed:Hide()
+        b.duiSlotPushed = slotPushed
+
+        local icon = b:CreateTexture(nil, "ARTWORK")
+        icon:SetTexCoord(0.1, 0.9, 0.1, 0.9)
+        icon:SetPoint("CENTER", b, "CENTER", 0, 0)
+        b.icon = icon
+
+        local hl = b:CreateTexture(nil, "HIGHLIGHT")
+        hl:SetTexture([[Interface\Buttons\ButtonHilight-Square]])
+        hl:SetBlendMode("ADD")
+        hl:SetAllPoints(b)
+
+        b:SetScript("OnClick", function()
+            if type(_G.ClasslessFrame_Toggle) == "function" then
+                _G.ClasslessFrame_Toggle()
+            end
+        end)
+        b:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+            GameTooltip:SetText("Classless")
+            GameTooltip:Show()
+        end)
+        b:SetScript("OnLeave", function() GameTooltip:Hide() end)
+        b:SetScript("OnMouseDown", function(self)
+            if self.duiSlot then self.duiSlot:Hide() end
+            if self.duiSlotPushed then self.duiSlotPushed:Show() end
+        end)
+        b:SetScript("OnMouseUp", function(self)
+            if self.duiSlotPushed then self.duiSlotPushed:Hide() end
+            if self.duiSlot then self.duiSlot:Show() end
+        end)
+
+        b:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+        b:SetScript("OnEvent", function(self)
+            local tex = select(10, GetItemInfo("Destiny's Dice"))
+                or select(10, GetItemInfo("Destiny’s Dice"))
+            if tex then
+                self.icon:SetTexture(tex)
+                self:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
+            end
+        end)
+    end
+    if parent then b:SetParent(parent) end
+    b.icon:SetTexture(GetClasslessDiceIcon())
+    return b
+end
+
+local function GetAdventureGuideButton()
+    local candidates = {
+        "AdventureGuideMicroButton", "GuideMicroButton", "EJMicroButton",
+        "EncounterJournalMicroButton", "AdventureJournalMicroButton",
+    }
+    for _, n in ipairs(candidates) do
+        local f = _G[n]
+        if f and f.IsObjectType and f:IsObjectType("Button") then return f end
+    end
+    local known = {
+        CharacterMicroButton = true, SpellbookMicroButton = true, TalentMicroButton = true,
+        AchievementMicroButton = true, QuestLogMicroButton = true, SocialsMicroButton = true,
+        LFDMicroButton = true, CollectionsMicroButton = true, PVPMicroButton = true,
+        MainMenuMicroButton = true, HelpMicroButton = true, PathToAscensionMicroButton = true,
+        ChallengesMicroButton = true, [DUI_CLASSLESS_BTN_NAME] = true,
+    }
+    for name, obj in pairs(_G) do
+        if type(name) == "string" and name:find("MicroButton$") and not known[name]
+            and type(obj) == "table" and obj.IsObjectType and obj:IsObjectType("Button") then
+            return obj
+        end
+    end
+    return nil
+end
+
+local function GetMicroRowOrder()
+    local order = {}
+    local function add(f) if f then order[#order + 1] = f end end
+    add(_G.CharacterMicroButton)
+    add(_G.SpellbookMicroButton)
+    add(_G.TalentMicroButton)
+    add(_G[DUI_CLASSLESS_BTN_NAME])
+    add(_G.AchievementMicroButton)
+    add(_G.QuestLogMicroButton)
+    add(_G.SocialsMicroButton)
+    add(_G.LFDMicroButton)
+    add(_G.CollectionsMicroButton)
+    add(_G.PVPMicroButton)
+    add(_G.PathToAscensionMicroButton)
+    add(_G.ChallengesMicroButton)
+    add(GetAdventureGuideButton())
+    add(_G.MainMenuMicroButton)
+    add(_G.HelpMicroButton)
+    return order
+end
+
+local function PositionMicroRow()
+    local menu = _G.pUiMicroMenu
+    if not menu then return end
+    local useGrayscale = addon.db and addon.db.profile and addon.db.profile.micromenu
+        and addon.db.profile.micromenu.grayscale_icons
+    local configMode = useGrayscale and "grayscale" or "normal"
+    local cfgT = addon.db and addon.db.profile and addon.db.profile.micromenu
+        and addon.db.profile.micromenu[configMode]
+    local iconSpacing = (cfgT and cfgT.icon_spacing) or 26
+    EnsureClasslessMicroButton(menu)
+    local classless = _G[DUI_CLASSLESS_BTN_NAME]
+    local adventure = GetAdventureGuideButton()
+    local x = 0
+    for _, button in ipairs(GetMicroRowOrder()) do
+        local restore = false
+        if button.SetPoint == addon._noop then
+            button.SetPoint = UIParent.SetPoint
+            restore = true
+        end
+        button:SetParent(menu)
+        if button == classless then
+            local w = useGrayscale and 14 or 32
+            local h = useGrayscale and 19 or 40
+            button:SetSize(w, h)
+            local iconSz = useGrayscale and 11 or 22
+            if button.icon then button.icon:SetSize(iconSz, iconSz) end
+            if button.duiSlot then
+                if useGrayscale then
+                    button.duiSlot:Hide()
+                else
+                    button.duiSlot:SetSize(w, h + 1)
+                    button.duiSlot:ClearAllPoints()
+                    button.duiSlot:SetPoint("CENTER", -1, 1)
+                    button.duiSlot:Show()
+                end
+            end
+            if button.duiSlotPushed then
+                button.duiSlotPushed:SetSize(w, h + 1)
+                button.duiSlotPushed:ClearAllPoints()
+                button.duiSlotPushed:SetPoint("CENTER", -1, 1)
+            end
+        elseif button == adventure then
+            if useGrayscale then button:SetSize(14, 19) else button:SetSize(32, 40) end
+        end
+        button:ClearAllPoints()
+        button:SetPoint('LEFT', menu, 'BOTTOMRIGHT', x, 75)
+        if restore then button.SetPoint = addon._noop end
+        x = x + iconSpacing
+    end
+end
+
 -- State tracking
 local originalBlizzardHandlers = {}
 local bags_initialized = false
@@ -1859,10 +2025,8 @@ local function ApplyMicromenuSystem()
 
         -- Calculate overlay dimensions to match actual button span (in menu-scale coords)
         -- Count only buttons that actually exist (some may be nil on certain servers)
-        local numButtons = 0
-        for _, btn in pairs(MICRO_BUTTONS) do
-            if btn then numButtons = numButtons + 1 end
-        end
+        EnsureClasslessMicroButton(menu)
+        local numButtons = #GetMicroRowOrder()
         local buttonWidth = useGrayscale and 14 or 32
         local buttonHeight = useGrayscale and 19 or 40
         local totalWidth = (numButtons - 1) * iconSpacing + buttonWidth
@@ -2247,6 +2411,7 @@ local function ApplyMicromenuSystem()
                 buttonxOffset = buttonxOffset + iconSpacing
             end
         end
+        PositionMicroRow()
         UpdateCharacterPortraitVisibility()
 
         -- ====================================================================
@@ -2339,14 +2504,7 @@ local function ApplyMicromenuSystem()
         local config = addon.db.profile.micromenu[configMode]
         local iconSpacing = config.icon_spacing
 
-        local buttonxOffset = 0
-        for _, button in pairs(MICRO_BUTTONS) do
-            if button then
-                button:ClearAllPoints()
-                button:SetPoint('BOTTOMLEFT', _G.pUiMicroMenu, 'BOTTOMRIGHT', buttonxOffset, 55)
-                buttonxOffset = buttonxOffset + iconSpacing
-            end
-        end
+        PositionMicroRow()
     end
 
     function addon.RefreshMicromenuSpacing()
@@ -2517,24 +2675,7 @@ end
 
     addon.RefreshMicromenuIcons()
 
-    local buttonxOffset = 0
-    for _, button in pairs(MICRO_BUTTONS) do
-        if button then
-            local originalSetPoint = button.SetPoint
-            if button.SetPoint == addon._noop then
-                button.SetPoint = UIParent.SetPoint
-            end
-
-            button:ClearAllPoints()
-            button:SetPoint('BOTTOMLEFT', _G.pUiMicroMenu, 'BOTTOMRIGHT', buttonxOffset, 55)
-
-            if originalSetPoint == addon._noop then
-                button.SetPoint = originalSetPoint
-            end
-
-            buttonxOffset = buttonxOffset + config.icon_spacing
-        end
-    end
+    PositionMicroRow()
 
     addon.RefreshMicromenuVehicle()
     UpdateCharacterPortraitVisibility()
